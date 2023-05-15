@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v-bind="hello">
+<head>
+
+    <meta charset="UTF-8">
+    <title>Title</title>
+	<style>
+	img {
+		width:50px;
+		height: auto;
+}
+	body 
+	{
+		background-image:url('picture/bg4.jpg');	
+		background-size:100% 100%;
+		background-attachment: fixed;
+	}
+	
+</style>
+<style lang="scss">
+	.el-textarea__inner,.el-input__inner {
+    background: transparent !important;
+}
+</style>
+    <style>
+	.el-table--border th,tr,td{
+       border: none!important;
+    }
+    .el-table::before{
+      height:0;
+    }
+
+	.el-table, .el-table__expanded-cell{
+		background-color:transparent!important;
+	}
+	.el-table th,
+	.el-table tr,
+	.el-table td {
+		background-color:transparent!important;
+}
+</style>
+</head>
+<body>
+<div id="app" class="my_table">
+	<div>
+		<div style="float:right">
+			<el-input
+				v-enter @enter.native="goToSearchServlet"
+				size="middle"
+				placeholder="搜索"
+				id="singer" 
+				name="singer" 
+				type="text"
+				style="float:left"
+				v-model="input1">
+			<el-button slot="append" icon="el-icon-search" @click="goToSearchServlet()"></el-button>
+			</el-input>
+		</div>
+		<el-button @click="playMusicListInOrder()" type="success" style="float:right">顺序播放</el-button>
+		<el-button @click="playMusicListOutOfOrder()" type="success" style="float:right">随机播放</el-button>
+	</div>
+    <el-table	:data="tableData" @selection-change="handleSelectionChange" :show-header="false" >
+		<el-table-column type="selection" width="80" v-if="false"></el-table-column>
+		<el-table-column prop="id" label="id" width="0" v-if="false"></el-table-column>
+        <el-table-column prop="songName" label="音乐" width="300"></el-table-column>
+        <el-table-column prop="singerName" label="歌手" width="300"></el-table-column>
+        <el-table-column prop="path" label="路径" v-if="false"></el-table-column>
+		<el-table-column prop="address" label="">
+			<template slot-scope="scope">
+				<img src="picture/music2.png"   @click="playMusic(scope.row)">
+				<el-button @click="playMusic(scope.row)" type="success" v-if="false" >播放</el-button>
+			</template>
+        </el-table-column>
+	</el-table>
+	
+	
+   
+
+
+
+
+</div>
+<script src="js/vue.js"></script>
+<script src="element-ui/lib/index.js"></script>
+<link rel="stylesheet" href="element-ui/lib/theme-chalk/index.css">
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="js/axios-0.18.0.js"></script>
+<script src="https://cdn.bootcss.com/qs/6.7.0/qs.js"></script>
+<script>
+//设置input回车触发
+	Vue.directive('enter', {
+            bind: function (el, binding, vnode) {
+                const input = el.getElementsByTagName('input')[0];
+
+                input.addEventListener('keypress', function (e) {
+                    var key = e.which || e.keyCode;
+
+                    if (key === 13) { // 13 is enter
+                        // code for enter
+                        el.dispatchEvent(new Event('enter'))
+                    }
+                })
+            },
+            unbind: function (el, binding, vnode) {
+
+            }
+        })
+		
+	var audio = document.createElement("audio");
+	
+	
+    new Vue({
+        el: "#app",
+		
+
+        mounted(){
+			_this=this;
+            _this.selectPlaylist();
+			/*
+			playList=['https://ppt-mp3cdn.hrxz.com/d/file/filemp3/hrxz.com-zallrhq1poy43493.mp3','https://ppt-mp3cdn.hrxz.com/d/file/filemp3/hrxz.com-0hkxftayuzf47084.mp3','https://ppt-mp3cdn.hrxz.com/d/file/filemp3/hrxz.com-glfmryjua343501.mp3'];
+			
+			alert(this.pathList);
+			audio.addEventListener('ended', function () {  
+				_this.pathIndex++;
+				if(_this.pathIndex<playList.length){		
+					audio.src=playList[_this.pathIndex]
+					audio.play();
+					return;
+				}
+				}, false);
+			*/	
+        },
+
+        methods: {
+			ready(){
+				this.audioReady = true
+			},
+			playMusicListInOrder(){
+				this.playMusicList();
+			},
+			playMusicListOutOfOrder(){
+				this.pathList=shuffle(this.pathList);
+				console.log(this.playList);
+				this.playMusicList();
+			},
+			//JS随机打乱数组 
+			shuffle(arr){
+				for(var i = 0;i<arr.length;i++){
+					var random = Math.floor(Math.random()*arr.length);
+					var temp = arr[i];
+					arr[i] = arr[random];
+					arr[random] = temp;
+				}
+				return arr;
+			},
+			goToSearchServlet(){
+				var _this = this;
+				let data=Qs.stringify({
+					singer:this.input1
+                 });
+				console.log(this.input1);				
+				axios.post('http://localhost:8080/web-demo/searchSong',data)
+				.then(function (resp) {
+					console.log(resp.data);
+                    _this.tableData = resp.data;         
+				})
+			},
+            // 查询所有数据
+            selectPlaylist(){
+                var _this = this;
+                axios({
+                    method:"get",
+                    url:"http://localhost:8080/web-demo/getPlaylist"
+                }).then(function (resp) {
+                    _this.tableData = resp.data;
+					//获取pathList
+					for(var i=0;i<(_this.tableData).length;i++){
+						var path=_this.tableData[i].path;
+						_this.pathList.push(path);
+					}
+                })
+            },
+			//播放音乐
+			playMusic(row){
+				audio.src =row.path;
+				audio.play();
+			},
+			playMusicList(){
+				_this=this;
+				audio.addEventListener('ended', function () {  
+					_this.pathIndex++;
+					if(_this.pathIndex<_this.pathList.length){		
+						audio.src=_this.pathList[_this.pathIndex]
+						audio.play();
+						//return;
+					}
+					else if(_this.pathIndex==_this.pathList.length){
+						_this.pathIndex=0;
+						audio.src=_this.pathList[_this.pathIndex]
+						audio.play();
+						//return;
+					}
+				}, false);
+				audio.src =this.pathList[this.pathIndex];
+				audio.play();
+			},
+			handleSelectionChange(val) {
+				this.multipleSelection = val;
+				console.log(this.multipleSelection);
+			},
+        },
+        data() {
+            return {
+				audioReady: false,
+				pathList:[],
+				pathIndex:0,
+				input1: '',
+				tableData: [],
+				musicPath:"",
+                multipleSelection: [],
+            }
+        }
+    })
+</script>
+
+</body>
+</html>
